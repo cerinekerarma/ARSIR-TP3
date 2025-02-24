@@ -4,7 +4,7 @@ import java.nio.file.*;
 
 public class ServeurHTTP {
     private static final int PORT = 8080;
-    private static final String BASE_DIR = "src";
+    private static final String BASE_DIR = "C:\\Users\\thiba\\IdeaProjects\\ARSIR-TP3\\TP3\\src";
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -25,6 +25,7 @@ public class ServeurHTTP {
              OutputStream out = client.getOutputStream()) {
 
             String requestLine = in.readLine();
+            String contextLine = in.readLine();
             if (requestLine == null) return;
 
             System.out.println("Requête reçue : " + requestLine);
@@ -36,12 +37,29 @@ public class ServeurHTTP {
                 return;
             }
 
+            String[] partsContext = contextLine.split(":");
+
+            if (partsContext.length < 2) {
+                envoyerReponse(out, "400 Bad Request", "Requête invalide.");
+                return;
+            }
+
+            String key = partsContext[0];
+            String value = partsContext[0];
+
             String method = parts[0];
             String chemin = parts[1].equals("/") ? "index.html" : parts[1].substring(1);
 
             // Vérifier la méthode HTTP
             if (!method.equals("GET")) {
                 envoyerReponse(out, "405 Method Not Allowed", "Méthode non autorisée.");
+                return;
+            }
+
+
+            System.out.println(key);
+            if (!key.equals("Host")){
+                envoyerReponse(out, "400 Bad Request", "Requête invalide.");
                 return;
             }
 
