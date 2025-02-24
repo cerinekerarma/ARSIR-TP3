@@ -29,24 +29,45 @@ public class ServeurHTTP {
 
             System.out.println("Requête reçue : " + requestLine);
 
-            // Récupérer le fichier demandé
+            // Récupérer la méthode et le fichier demandé
             String[] parts = requestLine.split(" ");
-            if (parts.length < 2 || !parts[0].equals("GET")) {
+            if (parts.length < 2) {
                 envoyerReponse(out, "400 Bad Request", "Requête invalide.");
                 return;
             }
 
+            String method = parts[0];
             String chemin = parts[1].equals("/") ? "index.html" : parts[1].substring(1);
-            Path fichier = Paths.get(BASE_DIR, chemin);
 
-            if (Files.exists(fichier) && !Files.isDirectory(fichier)) {
-                byte[] contenu = Files.readAllBytes(fichier);
-                envoyerReponse(out, "200 OK", new String(contenu), "text/html");
-            } else {
-                envoyerReponse(out, "404 Not Found", "Page non trouvée.");
+            // Vérifier la méthode HTTP
+            if (!method.equals("GET")) {
+                envoyerReponse(out, "405 Method Not Allowed", "Méthode non autorisée.");
+                return;
+            }
+
+            // Traiter la requête GET
+            try {
+                Path fichier = Paths.get(BASE_DIR, chemin);
+                if (Files.exists(fichier) && !Files.isDirectory(fichier)) {
+                    byte[] contenu = Files.readAllBytes(fichier);
+                    envoyerReponse(out, "200 OK", new String(contenu), "text/html");
+                } else {
+                    envoyerReponse(out, "404 Not Found", "Page non trouvée.");
+                }
+            } catch (IOException e) {
+                // Gestion de l'erreur interne du serveur (500)
+                envoyerReponse(out, "500 Internal Server Error", "Erreur interne du serveur.");
+                e.printStackTrace();  // Afficher l'erreur dans la console du serveur
             }
 
         } catch (IOException e) {
+            // Gestion d'une exception non prévue dans la lecture de la requête
+            try {
+                OutputStream out = client.getOutputStream();
+                envoyerReponse(out, "500 Internal Server Error", "Erreur interne du serveur.");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
             e.printStackTrace();
         }
     }
